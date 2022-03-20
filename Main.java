@@ -1,17 +1,22 @@
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Main {
-    static AtomicBoolean tumbler = new AtomicBoolean(false);
-    static User user = new User();
-    static Toy toy = new Toy();
-    private static boolean stop = true;
+    static volatile boolean tumbler = false;
+    final static int timeout = 3000;
     static int counter = 0;
-    static final int STOP_THREAD = 4;
+    final static  int STOP_THREAD = 4;
+    private static boolean stop = true;
 
     public static void main(String[] args) {
         Thread click = new Thread(() -> {
             while (stop) {
-                user.onClick(tumbler);
+                try {
+                    Thread.sleep(timeout);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                System.out.println("Включить тумблер");
+                tumbler = true;
                 counter++;
                 if (counter == STOP_THREAD) {
                     Thread.currentThread().interrupt();
@@ -19,13 +24,16 @@ public class Main {
                 }
             }
         });
+
         Thread notClick = new Thread(() -> {
             while (click.isAlive()) {
-                if (tumbler.compareAndSet(true, false)) {
-                    toy.OffClick();
+                if (tumbler) {
+                    System.out.println("Выключить тумблер");
+                    tumbler = false;
                 }
             }
         });
+
         click.start();
         notClick.start();
     }
